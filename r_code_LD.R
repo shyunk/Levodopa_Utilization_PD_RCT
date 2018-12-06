@@ -54,18 +54,94 @@ my.ci.u<-indirectE+1.96*(seIndirect)
 
 #calculate proportion mediated
 pmed<-indirectE*100/fit1$coefficients[[3]]
+# confidence interval proportion mediated
+pm.ci.l<-my.ci.1*100/fit1$coefficients[[3]] #actual upper limit, sign flip
+pm.ci.u<-my.ci.u*100/fit1$coefficients[[3]] #actual lowerlimit
 
-#plot lm's
-plot(fit1)
+#predicted lms were not included in the final write-up, but they are here for reference
 
-# Exploring bootstrap sampling distribution of LEDDchange across all 3 groups
+#plot lm , although not included in anaysis
+# save predictions of the model in the new data frame 
+# together with variable you want to plot against
+library(ggplot2)
+predicted_fit1 <- data.frame(pred1 = predict(fit1, newpd),newgr=newpd$newgr)
+
+# this is the predicted line of multiple linear regression
+ggplot(data = newpd, aes(x = newgr , y = LEDDchange)) + 
+  geom_point(color='blue') +
+  geom_line(color='red',data = predicted_fit1, aes(x=newgr, y=pred1))
+#repeat above for adjusted regression
+predicted_fit2 <- data.frame(pred2 = predict(fit2, newpd),newgr=newpd$newgr)
+
+# this is the predicted line of multiple linear regression
+ggplot(data = newpd, aes(x = newgr , y = LEDDchange)) + 
+  geom_point(color='blue') +
+  geom_line(color='red',data = predicted_fit2, aes(x=newgr, y=pred2))
+
+library(plotly)
+
+# Exploring bootstrap sampling distribution of LEDDchange across all 3 groups with bar plots
 set.seed(515)
 B <- 1000
 my.boot <- numeric(B)
 for (i in 1:B){
-  x <- sample(newpd$LEDDchange, size=50, replace=TRUE)#draw resample 
+  x <- sample(newpd$LEDDchange, size=106, replace=TRUE)#draw resample that matches original sample size
   my.boot[i] <- mean(x) #compute mean, store in my.boot
 }
 hist(my.boot,xlab=expression(bar(X)),ylab="Density", main="Bootstrap distribution")
 boot.mean <- mean(my.boot)
 lines(c(boot.mean, boot.mean), c(0,250), col="blue", lwd=2, lty=2)
+
+# check sample size for each group (0,1,2) for bootstrap resampling size
+table(newpd$newgr)
+
+#bootstrap for group 0 control
+set.seed(515)
+my.boot2 <- numeric(B)
+for (i in 1:B){
+  x2 <- sample(newpd$LEDDchange[newpd$newgr==0], size=36, replace=TRUE)#draw resample 
+  my.boot2[i] <- mean(x2) #compute mean, store in my.boot
+}
+hist(my.boot2,xlab=expression(bar("Control LEDC")),ylab="Density", main="Bootstrap distribution")
+boot.mean2 <- mean(my.boot2) #bootstrap mean for control
+lines(c(boot.mean2, boot.mean2), c(0,250), col="blue", lwd=2, lty=2)
+
+#Obtain Normal percentile 95% CI of control
+controlLL <- boot.mean2-1.96*sd(my.boot2) #Lower limit of 95% Normal CI
+controlUL <- boot.mean2+1.96*sd(my.boot2) #Upper limit of 95% Normal CI
+
+
+#Regular ex group 1 or AE
+set.seed(515)
+my.boot3 <- numeric(B)
+for (i in 1:B){
+  x3 <- sample(newpd$LEDDchange[newpd$newgr==1], size=34, replace=TRUE)#draw resample 
+  my.boot3[i] <- mean(x3) #compute mean, store in my.boot
+}
+hist(my.boot3,xlab=expression(bar("AE LEDC")),ylab="Density", main="Bootstrap distribution")
+boot.mean3 <- mean(my.boot3)
+lines(c(boot.mean3, boot.mean3), c(0,250), col="blue", lwd=2, lty=2)
+#Obtain Normal percentile 95% CI of AE
+aeLL <- boot.mean3-1.96*sd(my.boot3) #Lower limit of 95% Normal CI
+aeUL <- boot.mean3+1.96*sd(my.boot3) #Upper limit of 95% Normal CI
+
+
+#FBF group 2 bootstrap 
+set.seed(515)
+my.boot4 <- numeric(B)
+for (i in 1:B){
+  x4 <- sample(newpd$LEDDchange[newpd$newgr==2], size=36, replace=TRUE)#draw resample 
+  my.boot4[i] <- mean(x4) #compute mean, store in my.boot
+}
+hist(my.boot4,xlab=expression(bar("FBF LEDC")),ylab="Density", main="Bootstrap distribution")
+boot.mean4 <- mean(my.boot4)
+lines(c(boot.mean4, boot.mean4), c(0,250), col="blue", lwd=2, lty=2)
+#Obtain Normal percentile 95% CI of FBF
+fbfLL <- boot.mean4-1.96*sd(my.boot4) #Lower limit of 95% Normal CI
+fbfUL <- boot.mean4+1.96*sd(my.boot4) #Upper limit of 95% Normal CI
+
+
+#summaries
+summary(fit1)
+summary(fit2)
+summary(fit3)
